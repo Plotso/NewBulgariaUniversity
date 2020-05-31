@@ -32,15 +32,18 @@ class Player:
             self.eat_coin()
 
     def draw(self):
-        pygame.draw.circle(self.game.screen, PLAYER_COLOUR, (int(self.pixel_position.x),int(self.pixel_position.y)), self.game.grid_cell_width//2-2)
+        center = (int(self.pixel_position.x),int(self.pixel_position.y))
+        radius = self.game.grid_cell_width//2-2
+        pygame.draw.circle(self.game.screen, PLAYER_COLOUR, center, radius)
 
         # Drawing grid position rectangle
         if SHOULD_DISPLAY_GRID:
-            pygame.draw.rect(self.game.screen, RED,
-                             (self.grid_position[0]*self.game.grid_cell_width+SCREEN_BUFFER//2,
+            rectangle_position_dimensions = (self.grid_position[0]*self.game.grid_cell_width+SCREEN_BUFFER//2,
                               self.grid_position[1]*self.game.grid_cell_height+SCREEN_BUFFER//2,
                               self.game.grid_cell_width,
-                              self.game.grid_cell_height), 1)
+                              self.game.grid_cell_height)
+            width = 1
+            pygame.draw.rect(self.game.screen, RED, rectangle_position_dimensions, width)
 
     def move(self, direction):
         self.stored_direction = direction
