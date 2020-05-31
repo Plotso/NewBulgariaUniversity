@@ -63,7 +63,7 @@ class Player:
 
     def is_on_coin(self):
         if self.grid_position in self.game.coins:
-            return True
+            return self.should_update_grid_position()
         return False
 
 
