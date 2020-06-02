@@ -19,7 +19,7 @@ Mappings for easier understand of the map file:
 - W - location of a wall
 - 1, 2, 3, 4 - enemies location
 - C - location of coin
-- B - center exit
+- E - center exit
 
 [Link to background image](https://www.codeproject.com/KB/game/520783/background.png)
 

@@ -10,6 +10,7 @@ class Player:
         self.stored_direction = None
         self.able_to_move = True
         self.current_score = 0
+        self.speed = 2
 
     def get_pixel_position(self):
         x_cord = (self.grid_position.x * self.game.grid_cell_width) + SCREEN_BUFFER // 2 + self.game.grid_cell_width // 2
@@ -18,7 +19,7 @@ class Player:
 
     def update(self):
         if self.able_to_move:
-            self.pixel_position += self.direction
+            self.pixel_position += self.direction*self.speed
         if self.should_update_grid_position():
             if self.stored_direction != None:
                 self.direction = self.stored_direction

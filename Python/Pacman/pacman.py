@@ -64,11 +64,17 @@ class Pacman:
                         self.player_position = [index_x, index_y]
                     elif character in ["1", "2", "3", "4"]:
                         self.ghosts_position.append([index_x, index_y])
+                    elif character == 'E':
+                        surface = self.background
+                        rectangle_position_dimensions = (index_x*self.grid_cell_width, index_y*self.grid_cell_height,
+                                                         self.grid_cell_width, self.grid_cell_height)
+                        pygame.draw.rect(surface, BLACK, rectangle_position_dimensions)
 
     def create_ghosts(self):
         for index, position in enumerate(self.ghosts_position):
+            print("Index: {}".format(index))
             print(position)
-            self.ghosts.append(Ghost(self, vec(position)))
+            self.ghosts.append(Ghost(self, vec(position), index))
 
     def draw_text(self, text, screen, positions, size, colour, font_name, centered=False):
         font = pygame.font.SysFont(font_name, size)
