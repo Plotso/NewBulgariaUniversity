@@ -160,6 +160,10 @@ class Pacman:
         for ghost in self.ghosts:
             ghost.update()
 
+        for ghost in self.ghosts:
+            if ghost.grid_position == self.player.grid_position:
+                self.decrease_lives()
+
     def game_on_draw(self):
         self.screen.fill(BLACK)
         background_position = SCREEN_BUFFER // 2
@@ -190,3 +194,12 @@ class Pacman:
                       int(coin.y * self.grid_cell_height) + self.grid_cell_height // 2 + SCREEN_BUFFER // 2)
             radius = 5
             pygame.draw.circle(self.screen, COINS_COLOUR, center, radius)
+
+    def decrease_lives(self):
+        self.player.lives -= 1
+        if self.player.lives == 0:
+            self.state = "game over"
+        else:
+            self.player.reset_position()
+            for ghost in self.ghosts:
+                ghost.reset_position()

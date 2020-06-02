@@ -11,6 +11,8 @@ class Player:
         self.able_to_move = True
         self.current_score = 0
         self.speed = 2
+        self.lives = 3
+        self.initial_position = [position.x, position.y]
 
     def get_pixel_position(self):
         x_cord = (self.grid_position.x * self.game.grid_cell_width) + SCREEN_BUFFER // 2 + self.game.grid_cell_width // 2
@@ -37,6 +39,12 @@ class Player:
         radius = self.game.grid_cell_width//2-2
         pygame.draw.circle(self.game.screen, PLAYER_COLOUR, center, radius)
 
+        # Drawing lives
+        for x in range(self.lives):
+            center = (30 + 20*x, SCREEN_HEIGHT - 15)
+            radius = 7
+            pygame.draw.circle(self.game.screen, PLAYER_COLOUR, center, radius)
+
         # Drawing grid position rectangle
         if SHOULD_DISPLAY_GRID:
             rectangle_position_dimensions = (self.grid_position[0]*self.game.grid_cell_width+SCREEN_BUFFER//2,
@@ -46,16 +54,21 @@ class Player:
             width = 1
             pygame.draw.rect(self.game.screen, RED, rectangle_position_dimensions, width)
 
+    def reset_position(self):
+        self.grid_position = vec(self.initial_position)
+        self.pixel_position = self.get_pixel_position()
+        self.direction *= 0
+
     def move(self, direction):
         self.stored_direction = direction
 
     def should_update_grid_position(self):
         # logic for updating player position if he has successfully moved to new cell
         if int(self.pixel_position.x+SCREEN_BUFFER//2) % self.game.grid_cell_width == 0:
-            if self.direction == vec(1, 0) or self.direction == vec(-1, 0):
+            if self.direction == vec(1, 0) or self.direction == vec(-1, 0) or self.direction == vec(0, 0):
                 return True
         if int(self.pixel_position.y+SCREEN_BUFFER//2) % self.game.grid_cell_height == 0:
-            if self.direction == vec(0, 1) or self.direction == vec(0, -1):
+            if self.direction == vec(0, 1) or self.direction == vec(0, -1) or self.direction == vec(0, 0):
                 return True
         return False
 

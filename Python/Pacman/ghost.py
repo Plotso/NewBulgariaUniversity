@@ -12,8 +12,11 @@ class Ghost:
         self.radius = int(self.game.grid_cell_width//2.3)
         self.index = index
         self.colour = self.set_colour()
-        self.direction = vec(1, 0)
+        self.direction = vec(0, 0)
         self.personality = self.set_personality()
+        self.target = None
+        self.speed = self.set_speed()
+        self.initial_position = [position.x, position.y]
 
     def get_pixel_position(self):
         x_cord = (self.grid_position.x * self.game.grid_cell_width) + SCREEN_BUFFER // 2 + self.game.grid_cell_width // 2
@@ -21,9 +24,11 @@ class Ghost:
         return vec(x_cord, y_cord)
 
     def update(self):
-        self.pixel_position += self.direction
-        if self.should_update_grid_position():
-            self.move()
+        self.target = self.set_target()
+        if self.target != self.grid_position:
+            self.pixel_position += self.direction * self.speed
+            if self.should_update_grid_position():
+                self.move()
 
         self.set_grid_position_based_on_pixel_position()
 
@@ -31,12 +36,38 @@ class Ghost:
         center = (int(self.pixel_position.x), int(self.pixel_position.y))
         pygame.draw.circle(self.game.screen, self.colour, center, self.radius)
 
+    def reset_position(self):
+        self.grid_position = vec(self.initial_position)
+        self.pixel_position = self.get_pixel_position()
+        self.direction *= 0
+
+    def set_target(self):
+        player_position = self.game.player.grid_position
+        if self.personality == "speedy" or self.personality == "slow":
+            return player_position
+        else:
+            if player_position[0] > COLS//2 and player_position[1] > ROWS//2:
+                return vec(1, 1)
+            elif player_position[0] > COLS//2 and player_position[1] < ROWS//2:
+                return vec(1, ROWS-2)
+            elif player_position[0] < COLS//2 and player_position[1] > ROWS//2:
+                return vec(COLS-2, 1)
+            else:
+                return vec(COLS-2, ROWS-2)
+
+    def set_speed(self):
+        if self.personality in ["speedy", "scared"]:
+            speed = 2
+        else:
+            speed = 1
+        return speed
+
     def should_update_grid_position(self):
         if int(self.pixel_position.x+SCREEN_BUFFER//2) % self.game.grid_cell_width == 0:
-            if self.direction == vec(1, 0) or self.direction == vec(-1, 0):
+            if self.direction == vec(1, 0) or self.direction == vec(-1, 0) or self.direction == vec(0, 0):
                 return True
         if int(self.pixel_position.y+SCREEN_BUFFER//2) % self.game.grid_cell_height == 0:
-            if self.direction == vec(0, 1) or self.direction == vec(0, -1):
+            if self.direction == vec(0, 1) or self.direction == vec(0, -1) or self.direction == vec(0, 0):
                 return True
         return False
 
@@ -51,7 +82,7 @@ class Ghost:
             self.direction = self.get_path_direction()
 
     def get_path_direction(self):
-        next_grid_cell = self.find_next_cell_in_path()
+        next_grid_cell = self.find_next_cell_in_path(self.target)
         direction_x = next_grid_cell[0] - self.grid_position[0]
         direction_y = next_grid_cell[1] - self.grid_position[1]
         return vec(direction_x, direction_y)
@@ -72,10 +103,10 @@ class Ghost:
                 break
         return vec(direction_x, direction_y)
 
-    def find_next_cell_in_path(self):
+    def find_next_cell_in_path(self, target):
         entry_point = [int(self.grid_position.x), int(self.grid_position.y)]
-        #target_location = [int(target[0]), int(target[1])]
-        target_location = [int(self.game.player.grid_position.x), int(self.game.player.grid_position.y)]
+        target_location = [int(target[0]), int(target[1])]
+        #target_location = [int(self.game.player.grid_position.x), int(self.game.player.grid_position.y)]
         path = self.BFS(entry_point, target_location)
         next_cell = path[1]
         return next_cell
