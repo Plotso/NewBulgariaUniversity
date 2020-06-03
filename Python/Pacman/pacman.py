@@ -25,6 +25,7 @@ class Pacman:
         self.grid_cell_height = BACKGROUND_HEIGHT // ROWS
         self.walls = []
         self.coins = []
+        self.super_coins = []
         self.ghosts = []
         self.high_score = 20  # ToDo: Extract the high score to file
         self.player_position = None
@@ -75,6 +76,8 @@ class Pacman:
                         self.walls.append(vec(index_x, index_y))
                     elif character == 'C':
                         self.coins.append(vec(index_x, index_y))
+                    elif character == 'S':
+                        self.super_coins.append(vec(index_x, index_y))
                     elif character == 'P':
                         self.player_position = [index_x, index_y]
                     elif character in ["1", "2", "3", "4"]:
@@ -213,6 +216,7 @@ class Pacman:
         background_position = SCREEN_BUFFER // 2
         self.screen.blit(self.background, (background_position, background_position))
         self.draw_coins()
+        self.draw_super_coins()
         if SHOULD_DISPLAY_GRID:
             self.draw_grid()
 
@@ -237,6 +241,14 @@ class Pacman:
             center = (int(coin.x * self.grid_cell_width) + self.grid_cell_width // 2 + SCREEN_BUFFER // 2,
                       int(coin.y * self.grid_cell_height) + self.grid_cell_height // 2 + SCREEN_BUFFER // 2)
             radius = 5
+            pygame.draw.circle(self.screen, COINS_COLOUR, center, radius)
+
+    def draw_super_coins(self):
+
+        for coin in self.super_coins:
+            center = (int(coin.x * self.grid_cell_width) + self.grid_cell_width // 2 + SCREEN_BUFFER // 2,
+                      int(coin.y * self.grid_cell_height) + self.grid_cell_height // 2 + SCREEN_BUFFER // 2)
+            radius = 8
             pygame.draw.circle(self.screen, COINS_COLOUR, center, radius)
 
     def decrease_lives(self):

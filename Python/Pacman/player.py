@@ -34,6 +34,9 @@ class Player:
         if self.is_on_coin():
             self.eat_coin()
 
+        if self.is_on_super_coin():
+            self.eat_super_coin()
+
     def draw(self):
         center = (int(self.pixel_position.x),int(self.pixel_position.y))
         radius = self.game.grid_cell_width//2-2
@@ -87,10 +90,22 @@ class Player:
             return self.should_update_grid_position()
         return False
 
+    def is_on_super_coin(self):
+        if self.grid_position in self.game.super_coins:
+            return self.should_update_grid_position()
+        return False
+
 
     def eat_coin(self):
         self.game.coins.remove(self.grid_position)
         self.current_score += 1
+        if self.game.is_new_high_score():
+            self.game.has_new_high_score = True
+            self.game.high_score = self.current_score
+
+    def eat_super_coin(self):
+        self.game.super_coins.remove(self.grid_position)
+        self.current_score += 10
         if self.game.is_new_high_score():
             self.game.has_new_high_score = True
             self.game.high_score = self.current_score
