@@ -19,7 +19,11 @@ Mappings for easier understand of the map file:
 - W - location of a wall
 - 1, 2, 3, 4 - enemies location
 - C - location of coin
+- S - location of Super coin 
+- X - location of Ghosts reset token
 - E - center exit
+
+Player has to collect coins while avoiding to be eaten by the ghosts. 1 coin gives +1 to current score. 1 Super coin gives +10 to current score.
 
 [Link to background image](https://www.codeproject.com/KB/game/520783/background.png)
 

@@ -1,5 +1,7 @@
 import pygame
 import sys
+import datetime
+import os.path
 
 from settings import *
 from player import *
@@ -13,7 +15,7 @@ vec = pygame.math.Vector2
 class Pacman:
 
     def __init__(self):
-        programIcon = pygame.image.load('icon.png')
+        programIcon = pygame.image.load('icon2.png')
 
         pygame.display.set_icon(programIcon)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -26,12 +28,13 @@ class Pacman:
         self.walls = []
         self.coins = []
         self.super_coins = []
+        self.ghost_reset_tokens = []
         self.ghosts = []
-        self.high_score = 20  # ToDo: Extract the high score to file
+        self.high_score = None
         self.player_position = None
         self.ghosts_position = []
         self.temp_counter = None
-        self.ghosts_limit = 4 # add logic based on test counter
+        self.ghosts_limit = 4
         self.has_new_high_score = False
 
         self.load()
@@ -42,7 +45,6 @@ class Pacman:
         while self.running:
             if self.state == 'start':
                 self.start_events()
-                self.start_update()
                 self.start_draw()
             elif self.state == 'game on':
                 self.game_on_events()
@@ -53,7 +55,6 @@ class Pacman:
                 self.settings_draw()
             elif self.state == 'game over':
                 self.game_over_events()
-                self.game_over_update()
                 self.game_over_draw()
             else:
                 self.running = False
@@ -67,6 +68,7 @@ class Pacman:
         self.background = pygame.image.load('background.png')
         self.background = pygame.transform.scale(self.background, (BACKGROUND_WIDTH, BACKGROUND_HEIGHT))
         self.temp_counter = self.ghosts_limit
+        self.load_high_score_from_file()
 
         # Opening map file. Create list of walls containing cordinates stored as vector
         with open("map.txt", 'r') as file:
@@ -78,6 +80,8 @@ class Pacman:
                         self.coins.append(vec(index_x, index_y))
                     elif character == 'S':
                         self.super_coins.append(vec(index_x, index_y))
+                    elif character == 'X':
+                        self.ghost_reset_tokens.append(vec(index_x, index_y))
                     elif character == 'P':
                         self.player_position = [index_x, index_y]
                     elif character in ["1", "2", "3", "4"]:
@@ -103,6 +107,29 @@ class Pacman:
                         self.ghosts_position.append([index_x, index_y])
         self.create_ghosts()
 
+    def load_high_score_from_file(self):
+        if os.path.exists(HIGH_SCORE_FILE_NAME):
+            with open(HIGH_SCORE_FILE_NAME, 'r') as file:
+                file_info = file.readline()
+                if file_info.isdigit():
+                    self.high_score = file_info
+                else:
+                    self.high_score = 0
+        else:
+            self.high_score = 0
+
+
+    def write_score_in_file(self):
+        current_datetime = datetime.datetime.now()
+        current_datetime = current_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        with open(ALL_SCORES_FILE_NAME, 'a') as file:
+            result = "[" + current_datetime + "] " + "Score: {}".format(self.player.current_score) + "\r\n"
+            file.write(result)
+
+    def update_high_score_file(self):
+        with open(HIGH_SCORE_FILE_NAME, 'w') as file:
+            file.write(str(self.high_score))
+
     def draw_text(self, text, screen, positions, size, colour, font_name, centered=False):
         font = pygame.font.SysFont(font_name, size)
         display_text = font.render(text, False, colour)
@@ -127,7 +154,7 @@ class Pacman:
         self.display_coins_and_walls_paths()
 
     def is_new_high_score(self):
-        return self.player.current_score > self.high_score
+        return self.player.current_score > int(self.high_score)
 
     def display_coins_and_walls_paths(self):
         # works only if should display grid setting is set to True
@@ -171,19 +198,19 @@ class Pacman:
                 if event.key == pygame.K_s:
                     self.state = "settings"
 
-    def start_update(self):  # ToDo: Remove if not used later
-        pass
-
     def start_draw(self):
         self.screen.fill(BLACK)
-        self.draw_text("PRESS SPACE KEY", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50], TEXT_SIZE_START*2,
-                       PRESS_TO_START_COLOR, DEFAULT_FONT, True)
-        self.draw_text("1 PLAYER ONLY", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50], TEXT_SIZE_START,
-                       START_INFO_COLOR, DEFAULT_FONT, True)
+        start_game_command_text = "PRESS SPACE KEY"
+        start_game_text_position = [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50]
+        info_text = "1 PLAYER ONLY"
+        info_position = [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50]
+        settings_commands_text = "Press S key to go to Settings"
+        settings_command_position = [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150]
 
-        self.draw_text("PRESS S TO GO TO SETTING", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150], TEXT_SIZE_START,
-                       GREY, DEFAULT_FONT, True)
-        self.draw_text("HIGH SCORE", self.screen, [4, 0], TEXT_SIZE_START, WHITE, DEFAULT_FONT, False)
+        self.draw_text(start_game_command_text, self.screen, start_game_text_position, TEXT_SIZE_START*2, PRESS_TO_START_COLOR, DEFAULT_FONT, True)
+        self.draw_text(info_text, self.screen, info_position, TEXT_SIZE_START, START_INFO_COLOR, DEFAULT_FONT, True)
+        self.draw_text(settings_commands_text, self.screen, settings_command_position, TEXT_SIZE_START, GREY, DEFAULT_FONT, True)
+        self.draw_text('HIGH SCORE: {}'.format(self.high_score), self.screen, [4, 0], TEXT_SIZE_START, WHITE, DEFAULT_FONT, False)
         pygame.display.update()
 
     # ------------------------------------------------- Active game screen functions -------------------------------------------------#
@@ -204,12 +231,19 @@ class Pacman:
 
     def game_on_update(self):
         self.player.update()
-        for ghost in self.ghosts:
-            ghost.update()
+        if not DISABLE_GHOSTS:
+            for ghost in self.ghosts:
+                ghost.update()
 
         for ghost in self.ghosts:
             if ghost.grid_position == self.player.grid_position:
                 self.decrease_lives()
+
+        if len(self.coins) == 0:
+            self.state = "game over"
+            if self.has_new_high_score:
+                self.update_high_score_file()
+            self.write_score_in_file()
 
     def game_on_draw(self):
         self.screen.fill(BLACK)
@@ -217,6 +251,7 @@ class Pacman:
         self.screen.blit(self.background, (background_position, background_position))
         self.draw_coins()
         self.draw_super_coins()
+        self.draw_ghost_reset_tokens()
         if SHOULD_DISPLAY_GRID:
             self.draw_grid()
 
@@ -244,12 +279,18 @@ class Pacman:
             pygame.draw.circle(self.screen, COINS_COLOUR, center, radius)
 
     def draw_super_coins(self):
-
         for coin in self.super_coins:
             center = (int(coin.x * self.grid_cell_width) + self.grid_cell_width // 2 + SCREEN_BUFFER // 2,
                       int(coin.y * self.grid_cell_height) + self.grid_cell_height // 2 + SCREEN_BUFFER // 2)
             radius = 8
             pygame.draw.circle(self.screen, COINS_COLOUR, center, radius)
+
+    def draw_ghost_reset_tokens(self):
+        for token in self.ghost_reset_tokens:
+            center = (int(token.x * self.grid_cell_width) + self.grid_cell_width // 2 + SCREEN_BUFFER // 2,
+                      int(token.y * self.grid_cell_height) + self.grid_cell_height // 2 + SCREEN_BUFFER // 2)
+            radius = 8
+            pygame.draw.circle(self.screen, GHOST_RESET_TOKEN_COLOUR, center, radius)
 
     def decrease_lives(self):
         self.player.lives -= 1
@@ -257,7 +298,8 @@ class Pacman:
             self.state = "game over"
             #ToDO: add logic for updating HighScore in file after the game is finished, only if there is new high score
             if self.has_new_high_score:
-                pass # write in file... also read it from file on load function
+                self.update_high_score_file() # write in file... also read it from file on load function
+            self.write_score_in_file()
         else:
             self.player.reset_position()
             for ghost in self.ghosts:
@@ -288,6 +330,7 @@ class Pacman:
         #self.screen.blit(self.screen, (SCREEN_WIDTH-5, SCREEN_HEIGHT))
         self.screen.fill(BLACK)
         press_arrows_text = "Press the  UP arrow to INCREASE or DOWN arrow to DECREASE"
+        allowed_range = "Allowed number of ghosts[1-4]"
         number_of_ghosts_text = 'NUMBER OF GHOSTS: {}'.format(self.temp_counter)
         save_settings_text = "Press the SPACE button to SAVE"
         discard_settings_text = "Press the ESCAPE button to DISCARD"
@@ -296,6 +339,7 @@ class Pacman:
                        START_INFO_COLOR, DEFAULT_FONT, True)
 
         self.draw_text(press_arrows_text, self.screen, [8, 5], TEXT_SIZE_START, WHITE, DEFAULT_FONT, False)
+        self.draw_text(allowed_range, self.screen, [8, 25], TEXT_SIZE_START-1, WHITE, DEFAULT_FONT, False)
         self.draw_text(save_settings_text, self.screen, [
                        SCREEN_WIDTH//2, SCREEN_HEIGHT//2+50],  TEXT_SIZE_START, GAME_OVER_COLOR, DEFAULT_FONT, True)
         self.draw_text(discard_settings_text, self.screen, [
@@ -308,13 +352,11 @@ class Pacman:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                self.reset()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.running = False
-
-    def game_over_update(self):
-        pass
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.reset()
+                elif event.key == pygame.K_ESCAPE:
+                    self.running = False
 
     def game_over_draw(self):
         self.screen.fill(BLACK)
