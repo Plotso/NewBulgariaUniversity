@@ -11,7 +11,7 @@ class Player:
         self.able_to_move = True
         self.current_score = 0
         self.speed = 2
-        self.lives = 3
+        self.lives = LIVES
         self.initial_position = [position.x, position.y]
 
     def get_pixel_position(self):
@@ -59,6 +59,10 @@ class Player:
         self.pixel_position = self.get_pixel_position()
         self.direction *= 0
 
+    def on_game_reset(self):
+        self.lives = LIVES
+        self.current_score = 0
+
     def move(self, direction):
         self.stored_direction = direction
 
@@ -88,5 +92,6 @@ class Player:
         self.game.coins.remove(self.grid_position)
         self.current_score += 1
         if self.game.is_new_high_score():
+            self.game.has_new_high_score = True
             self.game.high_score = self.current_score
 

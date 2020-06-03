@@ -6,12 +6,16 @@ from player import *
 from ghost import *
 
 pygame.init()
+pygame.display.set_caption(TITLE)
 vec = pygame.math.Vector2
 
 
 class Pacman:
 
     def __init__(self):
+        programIcon = pygame.image.load('icon.png')
+
+        pygame.display.set_icon(programIcon)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.clock = pygame.time.Clock()  # used to simulate FPS
         self.running = True
@@ -25,6 +29,9 @@ class Pacman:
         self.high_score = 20  # ToDo: Extract the high score to file
         self.player_position = None
         self.ghosts_position = []
+        self.temp_counter = None
+        self.ghosts_limit = 4 # add logic based on test counter
+        self.has_new_high_score = False
 
         self.load()
         self.player = Player(self, vec(self.player_position))
@@ -40,6 +47,13 @@ class Pacman:
                 self.game_on_events()
                 self.game_on_update()
                 self.game_on_draw()
+            elif self.state == "settings":
+                self.settings_events()
+                self.settings_draw()
+            elif self.state == 'game over':
+                self.game_over_events()
+                self.game_over_update()
+                self.game_over_draw()
             else:
                 self.running = False
             self.clock.tick(FPS)
@@ -51,6 +65,7 @@ class Pacman:
     def load(self):  # loads all prerequisites to play the game
         self.background = pygame.image.load('background.png')
         self.background = pygame.transform.scale(self.background, (BACKGROUND_WIDTH, BACKGROUND_HEIGHT))
+        self.temp_counter = self.ghosts_limit
 
         # Opening map file. Create list of walls containing cordinates stored as vector
         with open("map.txt", 'r') as file:
@@ -72,9 +87,18 @@ class Pacman:
 
     def create_ghosts(self):
         for index, position in enumerate(self.ghosts_position):
-            print("Index: {}".format(index))
-            print(position)
-            self.ghosts.append(Ghost(self, vec(position), index))
+            if len(self.ghosts) < self.ghosts_limit:
+                self.ghosts.append(Ghost(self, vec(position), index))
+
+    def reset_ghosts(self):
+        self.ghosts = []
+        self.ghosts_position = []
+        with open("map.txt", 'r') as file:
+            for index_y, line in enumerate(file):
+                for index_x, character in enumerate(line):
+                    if character in ["1", "2", "3", "4"]:
+                        self.ghosts_position.append([index_x, index_y])
+        self.create_ghosts()
 
     def draw_text(self, text, screen, positions, size, colour, font_name, centered=False):
         font = pygame.font.SysFont(font_name, size)
@@ -118,24 +142,44 @@ class Pacman:
                 self.grid_cell_height)
                 pygame.draw.rect(self.background, (167, 179, 34), rectangle_position_dimensions)
 
+    def reset(self):
+        self.has_new_high_score = False
+        self.player.on_game_reset()
+        self.player.reset_position()
+        for ghost in self.ghosts:
+            ghost.reset_position()
+        self.coins = []
+        with open("map.txt", "r") as file:
+            for index_y, line in enumerate(file):
+                for index_x, character in enumerate(line):
+                    if character == 'C':
+                        self.coins.append(vec(index_x, index_y))
+        self.state = "game on"
+
     # ------------------------------------------------- Start screen functions -------------------------------------------------#
 
     def start_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:  # ToDO: decide and add key to lead to setting screen
-                self.state = "game on"
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.state = "game on"
+                if event.key == pygame.K_s:
+                    self.state = "settings"
 
     def start_update(self):  # ToDo: Remove if not used later
         pass
 
     def start_draw(self):
         self.screen.fill(BLACK)
-        self.draw_text("PRESS SPACE KEY", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50], TEXT_SIZE_START,
+        self.draw_text("PRESS SPACE KEY", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50], TEXT_SIZE_START*2,
                        PRESS_TO_START_COLOR, DEFAULT_FONT, True)
         self.draw_text("1 PLAYER ONLY", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50], TEXT_SIZE_START,
                        START_INFO_COLOR, DEFAULT_FONT, True)
+
+        self.draw_text("PRESS S TO GO TO SETTING", self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150], TEXT_SIZE_START,
+                       GREY, DEFAULT_FONT, True)
         self.draw_text("HIGH SCORE", self.screen, [4, 0], TEXT_SIZE_START, WHITE, DEFAULT_FONT, False)
         pygame.display.update()
 
@@ -199,7 +243,85 @@ class Pacman:
         self.player.lives -= 1
         if self.player.lives == 0:
             self.state = "game over"
+            #ToDO: add logic for updating HighScore in file after the game is finished, only if there is new high score
+            if self.has_new_high_score:
+                pass # write in file... also read it from file on load function
         else:
             self.player.reset_position()
             for ghost in self.ghosts:
                 ghost.reset_position()
+
+    # ------------------------------------------------- Settings screen functions -------------------------------------------------#
+
+    def settings_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.ghosts_limit = self.temp_counter
+                    self.state = "start"
+                    self.reset_ghosts()
+                if event.key == pygame.K_ESCAPE:
+                    self.temp_counter = self.ghosts_limit
+                    self.state = "start"
+                if event.key == pygame.K_UP:
+                    if self.temp_counter < 4:
+                        self.temp_counter += 1
+                if event.key == pygame.K_DOWN:
+                    if self.temp_counter > 1:
+                        self.temp_counter -= 1
+
+    def settings_draw(self):
+        #self.screen.blit(self.screen, (SCREEN_WIDTH-5, SCREEN_HEIGHT))
+        self.screen.fill(BLACK)
+        press_arrows_text = "Press the  UP arrow to INCREASE or DOWN arrow to DECREASE"
+        number_of_ghosts_text = 'NUMBER OF GHOSTS: {}'.format(self.temp_counter)
+        save_settings_text = "Press the SPACE button to SAVE"
+        discard_settings_text = "Press the ESCAPE button to DISCARD"
+
+        self.draw_text(number_of_ghosts_text, self.screen, [SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50], TEXT_SIZE_START,
+                       START_INFO_COLOR, DEFAULT_FONT, True)
+
+        self.draw_text(press_arrows_text, self.screen, [8, 5], TEXT_SIZE_START, WHITE, DEFAULT_FONT, False)
+        self.draw_text(save_settings_text, self.screen, [
+                       SCREEN_WIDTH//2, SCREEN_HEIGHT//2+50],  TEXT_SIZE_START, GAME_OVER_COLOR, DEFAULT_FONT, True)
+        self.draw_text(discard_settings_text, self.screen, [
+                       SCREEN_WIDTH//2, SCREEN_HEIGHT//2+75],  TEXT_SIZE_START, GAME_OVER_COLOR, DEFAULT_FONT, True)
+
+        pygame.display.update()
+
+    # ------------------------------------------------- Game Over functions -------------------------------------------------#
+    def game_over_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                self.reset()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                self.running = False
+
+    def game_over_update(self):
+        pass
+
+    def game_over_draw(self):
+        self.screen.fill(BLACK)
+        exit_text = "Press the ESCAPE button to QUIT"
+        play_again_text = "Press the SPACE button to PLAY AGAIN"
+        game_over_size = 52
+        options_size = 20
+        self.draw_text("GAME OVER", self.screen, [SCREEN_WIDTH//2, 100],  game_over_size, RED, DEFAULT_FONT, True)
+        self.draw_text(play_again_text, self.screen, [
+                       SCREEN_WIDTH//2, SCREEN_HEIGHT//2],  options_size, GAME_OVER_COLOR, DEFAULT_FONT, True)
+        self.draw_text(exit_text, self.screen, [
+                       SCREEN_WIDTH//2, SCREEN_HEIGHT//1.5],  options_size, GAME_OVER_COLOR, DEFAULT_FONT, True)
+        if self.has_new_high_score:
+            new_high_score_text = 'NEW HIGH SCORE RECORD: {}'.format(self.high_score)
+            self.draw_text(new_high_score_text, self.screen, [
+                SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50], options_size, START_INFO_COLOR, DEFAULT_FONT, True)
+
+        texture_pixels_aside = 60
+        current_score_position = [SCREEN_WIDTH//2, 150]
+        self.draw_text('SCORE: {}'.format(self.player.current_score), self.screen, current_score_position, 18,
+                       WHITE, DEFAULT_FONT, True)
+        pygame.display.update()

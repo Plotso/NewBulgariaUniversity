@@ -1,6 +1,7 @@
 import pygame
 vec = pygame.math.Vector2
 
+TITLE = "PACMAN simulation"
 
 # Settings for the in-game screen
 SCREEN_WIDTH, SCREEN_HEIGHT = 610, 670
@@ -25,14 +26,16 @@ COINS_COLOUR = (124, 123, 7)
 
 PRESS_TO_START_COLOR = (170, 132, 58)
 START_INFO_COLOR = (44, 167, 198)
+GAME_OVER_COLOR = (190, 190, 190)
 
 BLUE_GHOST = (43, 78, 203)
 ORANGE_GHOST = (215, 159, 33)
 RED_GHOST = (189, 29, 29)
-YELLOW_GHOST = (197, 200, 27)
+GREEN_GHOST = (51, 204, 0)
 # Setting for font
 TEXT_SIZE_START = 16
 DEFAULT_FONT = 'arial black'
 
 # Setting for the Player
 START_POSITION = vec(1, 1)
+LIVES = 3

@@ -162,11 +162,11 @@ class Ghost:
     # Functions used to populate ghost specific fields based on index
     def set_colour(self):
         if self.index == 0:
-            return BLUE_GHOST
-        if self.index == 1:
-            return YELLOW_GHOST
-        if self.index == 2:
             return RED_GHOST
+        if self.index == 1:
+            return GREEN_GHOST
+        if self.index == 2:
+            return BLUE_GHOST
         if self.index == 3:
             return ORANGE_GHOST
 
